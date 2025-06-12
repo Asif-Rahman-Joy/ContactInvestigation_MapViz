@@ -1,0 +1,38 @@
+"0","# Load libraries"
+"0",""
+"0","library(readxl)"
+"0","library(tidyverse)"
+"0","library(ggplot2)"
+"0","library(leaflet)"
+"2","Warning:"
+"2"," package ‘leaflet’ was built under R version 4.4.3
+"
+"2","Registered S3 methods overwritten by 'htmltools':
+  method               from         
+  print.html           tools:rstudio
+  print.shiny.tag      tools:rstudio
+  print.shiny.tag.list tools:rstudio
+"
+"2","Registered S3 method overwritten by 'htmlwidgets':
+  method           from         
+  print.htmlwidget tools:rstudio
+"
+"0","# Load dataset"
+"0","contact_data <- read_excel(""data/02_Contact_Investigation.xlsx"")"
+"2","Warning:"
+"2"," Expecting logical in J17214 / R17214C10: got 'Won'
+"
+"0","# Clean & rename important columns"
+"0","contact_data <- contact_data |> "
+"0","  rename("
+"0","    Contact_ID = `Contact ID (House Hold)`,"
+"0","    Age = `Age (Year)`,"
+"0","    Gender = `Gender (Male/Female/Third Gender)`,"
+"0","    Division = `index.Division`,"
+"0","    Latitude = `index._Geo Point for Index Patient_latitude`,"
+"0","    Longitude = `index._Geo Point for Index Patient_longitude`"
+"0","  ) |> "
+"0","  mutate("
+"0","    Age_Group = ifelse(Age < 15, ""Child"", ""Adult"")"
+"0","  )|> "
+"0","  select(Contact_ID, Age, Age_Group, Gender, Division, Latitude, Longitude)"

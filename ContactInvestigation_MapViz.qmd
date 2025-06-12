@@ -1,0 +1,85 @@
+---
+title: "Contact Investigation Map & Summary"
+format: html
+editor: visual
+execute:
+  echo: false
+  warning: false
+  error: false
+  freeze: auto
+---
+
+***Contact Investigation***
+
+This section presents a summarized analysis of contact investigation data from two key divisions of Bangladesh: Khulna and Chattogram. The objective is to explore the age distribution, gender composition, and geographical spread of reported contacts using basic data wrangling and visual techniques.
+
+```{r }
+# Load libraries
+
+library(readxl)
+library(tidyverse)
+library(ggplot2)
+library(leaflet)
+
+# Load dataset
+contact_data <- read_excel("data/02_Contact_Investigation.xlsx")
+
+# Clean & rename important columns
+contact_data <- contact_data |> 
+  rename(
+    Contact_ID = `Contact ID (House Hold)`,
+    Age = `Age (Year)`,
+    Gender = `Gender (Male/Female/Third Gender)`,
+    Division = `index.Division`,
+    Latitude = `index._Geo Point for Index Patient_latitude`,
+    Longitude = `index._Geo Point for Index Patient_longitude`
+  ) |> 
+  mutate(
+    Age_Group = ifelse(Age < 15, "Child", "Adult")
+  )|> 
+  select(Contact_ID, Age, Age_Group, Gender, Division, Latitude, Longitude)
+```
+
+We have considered a sample of `r nrow(contact_data)` contact records for this analysis, drawn from Khulna and Chattogram divisions. The objective is to explore the age distribution, gender composition, and geographical spread of reported contacts using basic data wrangling and visual techniques. we summarize the total number of contacts per division, grouped by age. A bar chart is used to visually represent this distribution, offering a quick comparative view of **adult vs. child** contacts across the selected regions. Labels above each bar enhance interpretability for readers.
+
+```{r bar-chart}
+# Count patients by Division and Age_Group
+summary_data <- contact_data |> 
+  group_by(Division, Age_Group) |> 
+  summarise(Patient_Count = n(), .groups = "drop")
+
+# Bar plot
+ggplot(summary_data, aes(x = Division, y = Patient_Count, fill = Age_Group)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Patient Count by Division and Age Group",
+       x = "Division", y = "Number of Contacts") +
+  theme_minimal()+
+  geom_text(aes(label = Patient_Count), 
+            position = position_dodge(width = 0.9), 
+            vjust = 1.5, color = "white", size = 3)
+```
+
+In the final section, we introduce an interactive map to visualize the geolocation of reported contacts. Using the leaflet library, we plot coordinates by division, with a unique color scheme assigned to Khulna and Chattogram. This enables users to explore spatial patterns of the data. The map is zoomed to center over Bangladesh for clarity.
+
+```{r contact-map}
+# Filter & clean map data
+map_data <- contact_data |> 
+  filter(Division %in% c("Khulna", "Chattogram")) |>
+  filter(!is.na(Latitude) & !is.na(Longitude))
+
+# Color palette for divisions
+pal <- colorFactor(palette = c("blue", "red"), domain = map_data$Division)
+
+# Plot map
+leaflet(map_data) |> 
+  addTiles() |> 
+  setView(lng = 90.4, lat = 23.7, zoom = 7) |>  # Optional zoom on Bangladesh
+  addCircleMarkers(
+    lng = ~Longitude,
+    lat = ~Latitude,
+    popup = ~paste("Division:", Division, "<br>Gender:", Gender, "<br>Age Group:", Age_Group),
+    radius = 5,
+    color = ~pal(Division),
+    fillOpacity = 0.7
+  )
+```
